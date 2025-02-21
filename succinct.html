@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Matrix Digital Rain with Pulsing SVG Succinct Logo and Mouse-Following Bird</title>
+    <style>
+        body { margin: 0; background: black; overflow: hidden; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        
+        let WIDTH = window.innerWidth;
+        let HEIGHT = window.innerHeight;
+        const FONT_SIZE = 20;
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+
+        const GREEN = "#00FF00";
+        const FADE_GREEN = "#006400";
+        const columns = Math.floor(WIDTH / FONT_SIZE);
+        const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+        
+        const drops = Array(columns).fill().map(() => ({
+            y: Math.floor(Math.random() * HEIGHT / FONT_SIZE),
+            speed: Math.random() * 0.5 + 0.5
+        }));
+
+        
+        const logoImg = new Image();
+        logoImg.src = 'succinct_logo-1.svg'; 
+
+        let logoLoaded = false;
+        let scale = 1; 
+        let scaleDirection = 1; 
+        let logoWidth, logoHeight, logoX, logoY;
+
+        logoImg.onload = () => {
+            logoLoaded = true;           
+            const logoScale = 0.3;
+            logoWidth = logoImg.width * (HEIGHT * logoScale) / logoImg.height;
+            logoHeight = HEIGHT * logoScale;
+            logoX = (WIDTH - logoWidth) / 2;
+            logoY = (HEIGHT - logoHeight) / 2;
+        };
+
+        
+        const BIRD_SIZE = 70; 
+        let birdX = WIDTH / 2; 
+        let birdY = HEIGHT / 2; 
+        const BIRD_SPEED = 0.05; 
+
+        
+        const birdImg = new Image();
+        birdImg.src = 'bird.png'; 
+
+        let birdLoaded = false;
+        birdImg.onload = () => {
+            birdLoaded = true;
+        };
+
+       
+        let mouseX = WIDTH / 2;
+        let mouseY = HEIGHT / 2;
+
+        canvas.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        });
+
+        function drawBird() {
+            if (birdLoaded) {
+                ctx.drawImage(birdImg, birdX - BIRD_SIZE / 2, birdY - BIRD_SIZE / 2, BIRD_SIZE, BIRD_SIZE);
+            } else {
+               
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(birdX - BIRD_SIZE / 2, birdY - BIRD_SIZE / 2, BIRD_SIZE, BIRD_SIZE / 2); // Тело
+                ctx.fillStyle = "#FFA500"; 
+                ctx.fillRect(birdX - BIRD_SIZE / 4, birdY - BIRD_SIZE / 4, BIRD_SIZE / 2, BIRD_SIZE / 4);
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(birdX - BIRD_SIZE / 2, birdY - BIRD_SIZE / 4, BIRD_SIZE / 4, BIRD_SIZE / 4);
+                ctx.fillRect(birdX + BIRD_SIZE / 4, birdY - BIRD_SIZE / 4, BIRD_SIZE / 4, BIRD_SIZE / 4);
+                ctx.fillStyle = "#FF0000";
+                ctx.fillRect(birdX - BIRD_SIZE / 2, birdY + BIRD_SIZE / 4, BIRD_SIZE, BIRD_SIZE / 4);
+                ctx.fillStyle = "#000000";
+                ctx.beginPath();
+                ctx.arc(birdX - BIRD_SIZE / 4, birdY - BIRD_SIZE / 4, BIRD_SIZE / 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function updateBird() {
+           
+            const dx = mouseX - birdX;
+            const dy = mouseY - birdY;
+            birdX += dx * BIRD_SPEED;
+            birdY += dy * BIRD_SPEED;
+
+           
+            birdX = Math.max(BIRD_SIZE / 2, Math.min(WIDTH - BIRD_SIZE / 2, birdX));
+            birdY = Math.max(BIRD_SIZE / 2, Math.min(HEIGHT - BIRD_SIZE / 2, birdY));
+        }
+
+        function drawRain() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.font = `${FONT_SIZE}px monospace`;
+
+            for (let i = 0; i < columns; i++) {
+                const char = characters[Math.floor(Math.random() * characters.length)];
+                const yPos = drops[i].y * FONT_SIZE;
+
+                if (Math.random() < 0.1) {
+                    ctx.fillStyle = FADE_GREEN;
+                    ctx.fillText(char, i * FONT_SIZE, yPos - FONT_SIZE);
+                }
+                ctx.fillStyle = GREEN;
+                ctx.fillText(char, i * FONT_SIZE, yPos);
+
+                drops[i].y += drops[i].speed;
+                if (yPos > HEIGHT) {
+                    drops[i].y = 0;
+                    drops[i].speed = Math.random() * 0.5 + 0.5;
+                }
+            }
+        }
+
+        function drawLogo() {
+            if (logoLoaded) {
+                ctx.save();
+                ctx.translate(logoX + logoWidth / 2, logoY + logoHeight / 2); 
+                ctx.scale(scale, scale);
+                ctx.drawImage(logoImg, -logoWidth / 2, -logoHeight / 2, logoWidth, logoHeight);
+                ctx.restore();
+
+               
+                scale += scaleDirection * 0.0015; 
+                if (scale > 1.05) scaleDirection = -1; 
+                if (scale < 0.95) scaleDirection = 1;  
+            }
+        }
+
+
+        function animate() {
+            drawRain();
+            drawLogo();
+            updateBird();
+            drawBird();
+            requestAnimationFrame(animate);
+        }
+
+  
+        window.addEventListener('resize', () => {
+            WIDTH = window.innerWidth;
+            HEIGHT = window.innerHeight;
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            const newColumns = Math.floor(WIDTH / FONT_SIZE);
+            drops.length = 0;
+            for (let i = 0; i < newColumns; i++) {
+                drops.push({
+                    y: Math.floor(Math.random() * HEIGHT / FONT_SIZE),
+                    speed: Math.random() * 0.5 + 0.5
+                });
+            }
+            if (logoLoaded) {
+                const logoScale = 0.3; 
+                logoWidth = logoImg.width * (HEIGHT * logoScale) / logoImg.height;
+                logoHeight = HEIGHT * logoScale;
+                logoX = (WIDTH - logoWidth) / 2;
+                logoY = (HEIGHT - logoHeight) / 2;
+            }
+            birdX = WIDTH / 2; 
+            birdY = HEIGHT / 2;
+            mouseX = WIDTH / 2;
+            mouseY = HEIGHT / 2;
+        });
+
+        animate();
+    </script>
+</body>
+</html>
